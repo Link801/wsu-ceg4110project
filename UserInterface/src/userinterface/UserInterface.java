@@ -4,42 +4,61 @@
  * and open the template in the editor.
  */
 package userinterface;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JComboBox;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import java.awt.BorderLayout;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import java.awt.Frame;
+
+import java.io.*;
+import java.util.*;
+import javafx.application.*;
+import static javafx.application.Application.launch;
+import javafx.event.*;
+import javafx.geometry.*;
+import javafx.scene.*;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.*;
+
 /**
  *
  * @author Jon
  */
-public class UserInterface extends Frame{
+public class UserInterface extends Application {
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        new UserInterface();
+    public static void main (String[] args) {
+        launch (args);
     }
-    public UserInterface(){
-        JFrame userInterface = new JFrame();
-        userInterface.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        userInterface.setTitle("SeeFood AI UserInterface");
-        userInterface.setSize(800, 750);
-        userInterface.setLocationRelativeTo(null);
-        JButton userButton = new JButton("Add Image to Client");
-        userButton.addActionListener(new ActionListener(){
-           @Override 
-            public void actionPerformed(ActionEvent event) {
-                
+
+    @Override
+    public void start (Stage primaryStage) {
+        final FileChooser fc=new FileChooser ();
+
+        primaryStage.setTitle ("SeeFood AI User Interface");
+        Button imageButton=new Button ("Import Images");
+        imageButton.setOnAction ((ActionEvent event)->{
+            List<File> images=fc.showOpenMultipleDialog (primaryStage);
+            if (images!=null) {
+                int i=0;
+                for (File file:images) {
+                    System.out.println ("image "+i);
+                    i++;
+                }
             }
         });
-        userInterface.add(userButton,BorderLayout.SOUTH);
-        userInterface.setVisible(true);
+        
+        final GridPane inputGridPane=new GridPane ();
+       
+        GridPane.setConstraints (imageButton,0,0);
+        inputGridPane.setHgap (6);
+        inputGridPane.setVgap (6);
+        inputGridPane.getChildren ().addAll (imageButton);
+        
+        final Pane rootGroup=new VBox (12);
+        rootGroup.getChildren ().addAll (inputGridPane);
+        rootGroup.setPadding (new Insets (12,12,12,12));
+        primaryStage.setScene (new Scene (rootGroup));
+        primaryStage.show ();
     }
+
+    
 }
