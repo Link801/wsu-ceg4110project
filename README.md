@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-# This Branch is for the server application programs only
-=======
-# This Branch is for the user interface programs only
->>>>>>> origin/userInterface
+# This Branch is for the client and server communcation and the client integration plus integration of retrieving images from the device
