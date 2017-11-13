@@ -21,6 +21,17 @@ import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.ContentBody;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.util.EntityUtils;
 
 /**
  *
@@ -67,16 +78,43 @@ public class UserInterface extends Application {
                 try {
                     Session session = jsch.getSession(_user, _ip, port);
                     session.setPassword(_pw);
+                    
                     session.setConfig("StrictHostKeyChecking", "no");
                     System.out.println("Establishing Connection...");
+                    
                     session.connect();
+                    
                     System.out.println("Connection established.");
                     System.out.println("Creating SFTP Channel.");
+                    
                     ChannelSftp sftpChannel =
                             (ChannelSftp) session.openChannel("sftp");
-                    InputStream out = null;
-                    //unfinished
-                } catch (JSchException ex) {
+                    sftpChannel.connect();
+                    
+                    HttpClient httpclient = new DefaultHttpClient();
+                    httpclient.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
+                    HttpPost httppost = new HttpPost(_ip);
+                    MultipartEntity mpEntity = new MultipartEntity();
+                    ContentBody cbFile = new FileBody(file, "image/jpeg");
+                    mpEntity.addPart("userfile", cbFile);
+                    httppost.setEntity(mpEntity);
+                    
+                    System.out.println("executing request " + httppost.getRequestLine());
+                    HttpResponse response = httpclient.execute(httppost);
+                    HttpEntity resEntity = response.getEntity();
+                    
+                    System.out.println(response.getStatusLine());
+                    if (resEntity != null) {
+                      System.out.println(EntityUtils.toString(resEntity));
+                    }
+                    if (resEntity != null) {
+                      resEntity.consumeContent();
+                    }
+
+                    httpclient.getConnectionManager().shutdown();
+                    sftpChannel.disconnect();
+                    session.disconnect();
+                } catch (JSchException | IOException ex) {
                     Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
