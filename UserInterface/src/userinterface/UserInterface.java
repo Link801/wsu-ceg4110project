@@ -3,13 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package userinterface;
+package javaapplication12;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,17 +24,6 @@ import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpVersion;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.content.ContentBody;
-import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.CoreProtocolPNames;
-import org.apache.http.util.EntityUtils;
 
 /**
  *
@@ -39,18 +31,18 @@ import org.apache.http.util.EntityUtils;
  */
 public class UserInterface extends Application {
     
+    private final String _ip="127.0.0.1:5000";   //IP address of SeeFood VM (placeholder)
+    private final String _path="C:\\Users\\ecslogon\\Downloads\\ceg4110_project\\CEG4110_SeeFood\\test.py";
+    private final String _charset="UTF-8";
+    
     private List<File> _images;
-    private final String _user = "user";   //this should be replaced with the .pem filename
-    private final String _pw = "password";   //this is also a placeholder
-    private final String _ip = "34.225.62.156";    //IP address of SeeFood VM
-    private final int port = 22;    //SFTP usually runs on port 22
-    private JSch jsch;
-
     /**
      * @param args the command line arguments
      */
     public static void main (String[] args) {
+        System.setProperty("java.net.preferIPv4Stack" , "true");
         launch (args);
+//        System.out.println(System.getProperty("user.dir"));
     }
 
     @Override
@@ -73,50 +65,10 @@ public class UserInterface extends Application {
         });
         
         exportButton.setOnAction ((ActionEvent event) -> {
-            for (File file:_images) {
-                jsch = new JSch();
-                try {
-                    Session session = jsch.getSession(_user, _ip, port);
-                    session.setPassword(_pw);
-                    
-                    session.setConfig("StrictHostKeyChecking", "no");
-                    System.out.println("Establishing Connection...");
-                    
-                    session.connect();
-                    
-                    System.out.println("Connection established.");
-                    System.out.println("Creating SFTP Channel.");
-                    
-                    ChannelSftp sftpChannel =
-                            (ChannelSftp) session.openChannel("sftp");
-                    sftpChannel.connect();
-                    
-                    HttpClient httpclient = new DefaultHttpClient();
-                    httpclient.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
-                    HttpPost httppost = new HttpPost(_ip);
-                    MultipartEntity mpEntity = new MultipartEntity();
-                    ContentBody cbFile = new FileBody(file, "image/jpeg");
-                    mpEntity.addPart("userfile", cbFile);
-                    httppost.setEntity(mpEntity);
-                    
-                    System.out.println("executing request " + httppost.getRequestLine());
-                    HttpResponse response = httpclient.execute(httppost);
-                    HttpEntity resEntity = response.getEntity();
-                    
-                    System.out.println(response.getStatusLine());
-                    if (resEntity != null) {
-                      System.out.println(EntityUtils.toString(resEntity));
-                    }
-                    if (resEntity != null) {
-                      resEntity.consumeContent();
-                    }
-
-                    httpclient.getConnectionManager().shutdown();
-                    sftpChannel.disconnect();
-                    session.disconnect();
-                } catch (JSchException | IOException ex) {
-                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            try {
+                exportImages();
+            } catch (IOException ex) {
+                Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
         final GridPane inputGridPane=new GridPane ();
@@ -132,5 +84,80 @@ public class UserInterface extends Application {
         rootGroup.setPadding (new Insets (12,12,12,12));
         primaryStage.setScene (new Scene (rootGroup));
         primaryStage.show ();
-    }   
+    }
+    /**
+     * Sends one or more images to SeeFood via HTTP POST.
+     * @throws MalformedURLException
+     * @throws IOException 
+     */
+    private void exportImages() throws MalformedURLException, IOException{       
+        //InetAddress host=InetAddress.getByName(_ip);
+//        System.out.println(InetAddress.getByName(_ip));
+        URL url=new URL("http://34.236.92.140");
+        HttpURLConnection con=(HttpURLConnection) url.openConnection();
+        String output;
+        
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        con.setRequestProperty("Content-Type", "multipart/form-data");
+        
+        FileChannel in;
+        WritableByteChannel out;
+        
+        con.setDoOutput(true);  //this must be set to true in order to work
+        con.setDoInput(true);
+        
+        for(File file:_images){
+            in=new FileInputStream(file).getChannel();
+            out=Channels.newChannel(con.getOutputStream());
+            
+            in.transferTo(0, file.length(), out);
+            
+            output=readResultsToString(con);
+            
+            //Output the result from SeeFood
+            //Later on, this result should be stored for each image
+            if(output!=null){
+                System.out.println(output);
+            } else {
+                System.out.println("There was an error in the connection.");
+            }
+            in.close();
+            out.close();
+        }       
+        con.disconnect();
+    }
+    
+    /**
+     * Helper method to exportImages(). Should get response from server
+     * and append contents to string.
+     * @param con - the active http connection
+     * @return response from the server
+     */
+    private String readResultsToString(HttpURLConnection con){
+        String result = null;
+        StringBuffer sb = new StringBuffer();
+        InputStream is = null;
+             
+        try {          
+            is=new BufferedInputStream(con.getInputStream());
+            BufferedReader br=new BufferedReader(new InputStreamReader(is));
+            String inputLine="";
+            while((inputLine=br.readLine())!=null){
+                sb.append(inputLine);
+            }
+            result=sb.toString();
+        } catch (IOException ex) {
+            Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if(is!=null){
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        return result;
+    }
 }
