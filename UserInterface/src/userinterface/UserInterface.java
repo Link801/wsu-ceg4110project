@@ -7,12 +7,12 @@ package javaapplication12;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,17 +24,26 @@ import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 
 /**
  *
  * @author Jon
  */
 public class UserInterface extends Application {
-    
-    private final String _ip="127.0.0.1:5000";   //IP address of SeeFood VM (placeholder)
-    private final String _path="C:\\Users\\ecslogon\\Downloads\\ceg4110_project\\CEG4110_SeeFood\\test.py";
-    private final String _charset="UTF-8";
-    
     private List<File> _images;
     /**
      * @param args the command line arguments
@@ -42,7 +51,6 @@ public class UserInterface extends Application {
     public static void main (String[] args) {
         System.setProperty("java.net.preferIPv4Stack" , "true");
         launch (args);
-//        System.out.println(System.getProperty("user.dir"));
     }
 
     @Override
@@ -91,73 +99,62 @@ public class UserInterface extends Application {
      * @throws IOException 
      */
     private void exportImages() throws MalformedURLException, IOException{       
-        //InetAddress host=InetAddress.getByName(_ip);
-//        System.out.println(InetAddress.getByName(_ip));
-        URL url=new URL("http://34.236.92.140");
-        HttpURLConnection con=(HttpURLConnection) url.openConnection();
-        String output;
+        HttpClient client=HttpClients.createDefault();
+        HttpPost post=new HttpPost("http://34.236.92.140");
         
-        con.setRequestMethod("POST");
-        con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-        con.setRequestProperty("Content-Type", "multipart/form-data");
-        
-        FileChannel in;
-        WritableByteChannel out;
-        
-        con.setDoOutput(true);  //this must be set to true in order to work
-        con.setDoInput(true);
-        
+//        URL url=new URL("http://34.236.92.140");
+//        HttpURLConnection con=(HttpURLConnection) url.openConnection();
+//
+//        con.setRequestMethod("POST");
+//        con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+//        con.setRequestProperty("Content-Type", "multipart/form-data");
+//
+//        con.setDoOutput(true);  //this must be set to true in order to work
+//        con.setDoInput(true);
+//        
         for(File file:_images){
-            in=new FileInputStream(file).getChannel();
-            out=Channels.newChannel(con.getOutputStream());
+            System.out.println(file.getName());
+
+            MultipartEntity entity=new MultipartEntity();
+            entity.addPart("file", new FileBody(file));
             
-            in.transferTo(0, file.length(), out);
+            post.setEntity(entity);
+            HttpResponse response=client.execute(post);
             
-            output=readResultsToString(con);
-            
-            //Output the result from SeeFood
-            //Later on, this result should be stored for each image
-            if(output!=null){
-                System.out.println(output);
-            } else {
-                System.out.println("There was an error in the connection.");
+            if (response!=null) {
+                HttpEntity responseEnt=response.getEntity();
+                System.out.println(EntityUtils.toString(responseEnt));
             }
-            in.close();
-            out.close();
+            
+//            StringBuilder builder = new StringBuilder();
+//            builder.append(con.getResponseCode())
+//                   .append(" ")
+//                   .append(con.getResponseMessage())
+//                   .append("\n");
+//
+//            Map<String, List<String>> map = con.getHeaderFields();
+//            for (Map.Entry<String, List<String>> entry : map.entrySet()){
+//                if (entry.getKey() == null) 
+//                    continue;
+//                builder.append( entry.getKey())
+//                       .append(": ");
+//
+//                List<String> headerValues = entry.getValue();
+//                Iterator<String> it = headerValues.iterator();
+//                if (it.hasNext()) {
+//                    builder.append(it.next());
+//
+//                    while (it.hasNext()) {
+//                        builder.append(", ")
+//                               .append(it.next());
+//                    }
+//                }
+//
+//                builder.append("\n");
+//            }
+//
+//            System.out.println(builder);
         }       
-        con.disconnect();
-    }
-    
-    /**
-     * Helper method to exportImages(). Should get response from server
-     * and append contents to string.
-     * @param con - the active http connection
-     * @return response from the server
-     */
-    private String readResultsToString(HttpURLConnection con){
-        String result = null;
-        StringBuffer sb = new StringBuffer();
-        InputStream is = null;
-             
-        try {          
-            is=new BufferedInputStream(con.getInputStream());
-            BufferedReader br=new BufferedReader(new InputStreamReader(is));
-            String inputLine="";
-            while((inputLine=br.readLine())!=null){
-                sb.append(inputLine);
-            }
-            result=sb.toString();
-        } catch (IOException ex) {
-            Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            if(is!=null){
-                try {
-                    is.close();
-                } catch (IOException ex) {
-                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-        return result;
+//        con.disconnect();
     }
 }
