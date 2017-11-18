@@ -6,13 +6,7 @@
 package javaapplication12;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,17 +20,12 @@ import javafx.scene.layout.*;
 import javafx.stage.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
+import org.apache.http.ParseException;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 /**
@@ -73,11 +62,7 @@ public class UserInterface extends Application {
         });
         
         exportButton.setOnAction ((ActionEvent event) -> {
-            try {
-                exportImages();
-            } catch (IOException ex) {
-                Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            exportImages();
         });
         final GridPane inputGridPane=new GridPane ();
        
@@ -95,23 +80,11 @@ public class UserInterface extends Application {
     }
     /**
      * Sends one or more images to SeeFood via HTTP POST.
-     * @throws MalformedURLException
-     * @throws IOException 
      */
-    private void exportImages() throws MalformedURLException, IOException{       
+    private void exportImages() {       
         HttpClient client=HttpClients.createDefault();
         HttpPost post=new HttpPost("http://34.236.92.140");
-        
-//        URL url=new URL("http://34.236.92.140");
-//        HttpURLConnection con=(HttpURLConnection) url.openConnection();
-//
-//        con.setRequestMethod("POST");
-//        con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-//        con.setRequestProperty("Content-Type", "multipart/form-data");
-//
-//        con.setDoOutput(true);  //this must be set to true in order to work
-//        con.setDoInput(true);
-//        
+
         for(File file:_images){
             System.out.println(file.getName());
 
@@ -119,42 +92,57 @@ public class UserInterface extends Application {
             entity.addPart("file", new FileBody(file));
             
             post.setEntity(entity);
-            HttpResponse response=client.execute(post);
+            HttpResponse response=null;
+            try {
+                response = client.execute(post);
+            } catch (IOException ex) {
+                Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+            }
             
             if (response!=null) {
                 HttpEntity responseEnt=response.getEntity();
-                System.out.println(EntityUtils.toString(responseEnt));
+                try {
+                    System.out.println(EntityUtils.toString(responseEnt));
+                } catch (IOException | ParseException ex) {
+                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
-            
-//            StringBuilder builder = new StringBuilder();
-//            builder.append(con.getResponseCode())
-//                   .append(" ")
-//                   .append(con.getResponseMessage())
-//                   .append("\n");
-//
-//            Map<String, List<String>> map = con.getHeaderFields();
-//            for (Map.Entry<String, List<String>> entry : map.entrySet()){
-//                if (entry.getKey() == null) 
-//                    continue;
-//                builder.append( entry.getKey())
-//                       .append(": ");
-//
-//                List<String> headerValues = entry.getValue();
-//                Iterator<String> it = headerValues.iterator();
-//                if (it.hasNext()) {
-//                    builder.append(it.next());
-//
-//                    while (it.hasNext()) {
-//                        builder.append(", ")
-//                               .append(it.next());
-//                    }
-//                }
-//
-//                builder.append("\n");
-//            }
-//
-//            System.out.println(builder);
         }       
-//        con.disconnect();
+    }
+}
+
+/**
+ * Class to store the archival information of each image sent to SeeFood
+ * @author Sam
+ */
+class Archived {
+    
+    private String _filename;
+    private boolean _food;
+    private double _con;    //short for "confidence value"
+    private Date _date;
+    
+    /**
+     * Constructor
+     * @param filename - name of image file
+     * @param food - is or is not food
+     * @param con - confidence level of SeeFood
+     * @param date - date these values were generated
+     */
+    public Archived(String filename, boolean food, double con, Date date){
+        _filename=filename;
+        _food=food;
+        _con=con;
+        _date=date;
+    }    
+    
+    @Override
+    /**
+     * Overrides toString method to output contents of object, each separated
+     * by 2 tabs.
+     * @return a formatted string of the object's values
+     */
+    public String toString(){
+        return _filename+"/t/t"+_food+"/t/t"+_con+"/t/t"+_date.toString();
     }
 }
