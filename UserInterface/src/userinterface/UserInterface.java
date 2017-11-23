@@ -192,22 +192,28 @@ public class UserInterface extends Application {
         Label repeatuserNameLabel = new Label("Renter UserName:");
         final TextField repeatuserNameTextField = new TextField();
         Label passwordLabel = new Label("Password:");
-        final TextField passwordTextField = new TextField();
+        final PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Your Password");
         Label repeatpasswordLabel = new Label("Renter Password:");
-        final TextField repeatpasswordTextField = new TextField();
-        Button loginToAccountButton = new Button("Create New Account");
-        final Label loginMessageLabel = new Label();
+        final PasswordField repeatpasswordField = new PasswordField();
+        repeatpasswordField.setPromptText("Your Password");
+        Button createNewAccountButton = new Button("Create New Account");
+        final Text createAccountMessage = new Text();
+        createNewAccountButton.setOnAction((ActionEvent event)->{
+        createAccountMessage.setText("Your Account has been created.");
+        createAccountMessage.setFill(Color.RED);
+    });
         gridPane.add(text, 0, 0);
         gridPane.add(userNameLabel, 0, 1);
         gridPane.add(userNameTextField, 0, 2);
         gridPane.add(repeatuserNameLabel, 0, 3);
         gridPane.add(repeatuserNameTextField, 0, 4);
         gridPane.add(passwordLabel, 0, 5);
-        gridPane.add(passwordTextField, 0, 6);
+        gridPane.add(passwordField, 0, 6);
         gridPane.add(repeatpasswordLabel, 0, 7);
-        gridPane.add(repeatpasswordTextField, 0, 8);
-        gridPane.add(loginToAccountButton, 0, 9);
-        gridPane.add(loginMessageLabel, 0, 10);
+        gridPane.add(repeatpasswordField, 0, 8);
+        gridPane.add(createNewAccountButton, 0, 9);
+        gridPane.add(createAccountMessage, 0, 10);
 
         Pane rootGroup = new VBox(50);
         rootGroup.getChildren().addAll(gridPane);
@@ -245,16 +251,21 @@ public class UserInterface extends Application {
         Label userNameLabel = new Label("UserName:");
         final TextField userNameTextField = new TextField();
         Label passwordLabel = new Label("Password:");
-        final TextField passwordTextField = new TextField();
+        final PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Your Password");
+        final Text loginMessage = new Text();
         Button loginToAccountButton = new Button("Login");
-        final Label loginMessageLabel = new Label();
+        loginToAccountButton.setOnAction((ActionEvent event)->{
+        loginMessage.setText("You have been logged in into your account.");
+        loginMessage.setFill(Color.RED);
+    });
         gridPane.add(text, 0, 0);
         gridPane.add(userNameLabel, 0, 1);
         gridPane.add(userNameTextField, 0, 2);
         gridPane.add(passwordLabel, 0, 3);
-        gridPane.add(passwordTextField, 0, 4);
+        gridPane.add(passwordField, 0, 4);
         gridPane.add(loginToAccountButton, 0, 5);
-        gridPane.add(loginMessageLabel, 0, 6);
+        gridPane.add(loginMessage, 0, 6);
 
         Pane rootGroup = new VBox(50);
         rootGroup.getChildren().addAll(gridPane);
