@@ -3,10 +3,8 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javaapplication12;
-
+package userinterface;
 import java.io.*;
-import java.net.MalformedURLException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,22 +25,25 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import javafx.application.Application;
 
 /**
  *
  * @author Jon
  */
 public class UserInterface extends Application {
-    private List<File> _images;
+private List<File> _images;
     /**
      * @param args the command line arguments
+     * @throws java.io.IOException
      */
-    public static void main (String[] args) {
+    public static void main (String[] args) throws IOException {
+        WriteToFile();
+        ReadFromFile();
         System.setProperty("java.net.preferIPv4Stack" , "true");
         launch (args);
     }
 
-    @Override
     public void start (Stage primaryStage) {
         final FileChooser fc=new FileChooser ();
         primaryStage.setTitle ("SeeFood AI User Interface");
@@ -108,6 +109,33 @@ public class UserInterface extends Application {
                 }
             }
         }       
+    }
+    public static void ReadFromFile() throws IOException{
+        String readFromFileName = "life.txt";
+        String lineFromFile = null;
+        try{
+            FileReader fileReader = new FileReader(readFromFileName);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            while(null!= (lineFromFile = bufferedReader.readLine())){
+                System.out.println(lineFromFile);
+            }
+        }catch(FileNotFoundException fileException){
+            System.out.println("The file" + readFromFileName + "cannot be opened");
+        }
+        
+    }
+    public static void WriteToFile(){
+        String writeToFileName = "life.txt";
+        
+        try{
+            FileWriter fileWriter = new FileWriter(writeToFileName);
+            try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+                bufferedWriter.write("Hello, I am Jonathan Poston.");
+                bufferedWriter.write("I am the creator of the User Interface for this project.");
+            }
+        }catch(IOException ioException){
+            System.out.println("The file" + writeToFileName + "cannot be written to");
+        }
     }
 }
 
