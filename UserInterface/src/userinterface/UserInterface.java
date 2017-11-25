@@ -6,13 +6,11 @@ import java.util.*;
 import java.util.logging.*;
 import javafx.application.*;
 import static javafx.application.Application.launch;
-import javafx.collections.ObservableList;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.effect.InnerShadow;
-import javafx.scene.effect.Reflection;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -39,8 +37,8 @@ public class UserInterface extends Application {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException {
-        WriteToFile();
-        ReadFromFile();
+        writeToFile();
+        readFromFile();
         System.setProperty("java.net.preferIPv4Stack", "true");
         launch(args);
     }
@@ -74,10 +72,10 @@ public class UserInterface extends Application {
             exportImages();
         });
         newUserButton.setOnAction((ActionEvent event) -> {
-            CreateUser(secondaryStage);
+            createUser(secondaryStage);
         });
         loginButton.setOnAction((ActionEvent event) -> {
-            Login(tertiaryStage);
+            login(tertiaryStage);
         });
 
         final GridPane inputGridPane = new GridPane();
@@ -121,6 +119,7 @@ public class UserInterface extends Application {
             if (response != null) {
                 HttpEntity responseEnt = response.getEntity();
                 try {
+                    
                     System.out.println(EntityUtils.toString(responseEnt));
                 } catch (IOException | ParseException ex) {
                     Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
@@ -128,8 +127,11 @@ public class UserInterface extends Application {
             }
         }
     }
-
-    public static void ReadFromFile() throws IOException {
+    /**
+     * Read archive information from file. Currently just reads sample input.
+     * @throws IOException 
+     */
+    private static void readFromFile() throws IOException {
         String readFromFileName = "life.txt";
         String lineFromFile = null;
         try {
@@ -143,8 +145,11 @@ public class UserInterface extends Application {
         }
 
     }
-
-    public static void WriteToFile() {
+    
+    /**
+     * Writes information to a file. Currently just writes hard-coded output.
+     */
+    private static void writeToFile() {
         String writeToFileName = "life.txt";
 
         try {
@@ -158,7 +163,7 @@ public class UserInterface extends Application {
         }
     }
 
-    public void CreateUser(Stage secondaryStage) {
+    private void createUser(Stage secondaryStage) {
         secondaryStage.setTitle("Create New Accounnt");
         BorderPane borderPane = new BorderPane();
         borderPane.setPadding(new Insets(10, 50, 50, 50));
@@ -218,7 +223,7 @@ public class UserInterface extends Application {
 
     }
 
-    public void Login(Stage tertiaryStage) {
+    private void login(Stage tertiaryStage) {
         tertiaryStage.setTitle("Login");
         BorderPane borderPane = new BorderPane();
         borderPane.setPadding(new Insets(10, 50, 50, 50));
@@ -269,44 +274,44 @@ public class UserInterface extends Application {
         tertiaryStage.show();
 
     }
-
-}
-
-/**
- * Class to store the archival information of each image sent to SeeFood
- *
- * @author Sam
- */
-class Archived {
-
-    private String _filename;
-    private boolean _food;
-    private double _con;    //short for "confidence value"
-    private Date _date;
-
     /**
-     * Constructor
+     * Class to store the archival information of each image sent to SeeFood
      *
-     * @param filename - name of image file
-     * @param food - is or is not food
-     * @param con - confidence level of SeeFood
-     * @param date - date these values were generated
+     * @author Sam
      */
-    public Archived(String filename, boolean food, double con, Date date) {
-        _filename = filename;
-        _food = food;
-        _con = con;
-        _date = date;
-    }
+    private class Archived {
 
-    @Override
-    /**
-     * Overrides toString method to output contents of object, each separated by
-     * 2 tabs.
-     *
-     * @return a formatted string of the object's values
-     */
-    public String toString() {
-        return _filename + "/t/t" + _food + "/t/t" + _con + "/t/t" + _date.toString();
+        private String _filename;
+        private boolean _food;
+        private double _con;    //short for "confidence value"
+        private Date _date;
+
+        /**
+         * Constructor
+         *
+         * @param filename - name of image file
+         * @param food - is or is not food
+         * @param con - confidence level of SeeFood
+         * @param date - date these values were generated
+         */
+        public Archived(String filename, boolean food, double con, Date date) {
+            _filename = filename;
+            _food = food;
+            _con = con;
+            _date = date;
+        }
+
+        @Override
+        /**
+         * Overrides toString method to output contents of object, each separated by
+         * 2 tabs.
+         *
+         * @return a formatted string of the object's values
+         */
+        public String toString() {
+            return _filename + "/t/t" + _food + "/t/t" + _con + "/t/t" + _date.toString();
+        }
     }
 }
+
+
