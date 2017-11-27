@@ -31,14 +31,13 @@ import org.apache.http.util.EntityUtils;
 public class UserInterface extends Application {
 
     private List<File> _images;
+    private String _user="default";
 
     /**
      * @param args the command line arguments
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException {
-        writeToFile();
-        readFromFile();
         System.setProperty("java.net.preferIPv4Stack", "true");
         launch(args);
     }
@@ -149,7 +148,7 @@ public class UserInterface extends Application {
     /**
      * Writes information to a file. Currently just writes hard-coded output.
      */
-    private static void writeToFile() {
+    private void writeToFile() {
         String writeToFileName = "life.txt";
 
         try {
@@ -170,39 +169,109 @@ public class UserInterface extends Application {
 
         HBox hBox = new HBox();
         hBox.setPadding(new Insets(20, 20, 20, 30));
+        
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(20, 20, 20, 20));
         gridPane.setHgap(5);
         gridPane.setVgap(5);
+        
         Text text = new Text();
         InnerShadow is = new InnerShadow();
+        
         is.setOffsetX(2.0f);
         is.setOffsetY(2.0f);
+        
         text.setEffect(is);
         text.setX(20);
         text.setY(100);
         text.setText("Create A New User Account");
         text.setFill(Color.RED);
         text.setFont(Font.font("null", FontWeight.BOLD, 30));
-
         text.setTranslateX(0);
         text.setTranslateY(0);
+        
         Label userNameLabel = new Label("UserName:");
         final TextField userNameTextField = new TextField();
-        Label repeatuserNameLabel = new Label("Renter UserName:");
+        Label repeatuserNameLabel = new Label("Re-enter UserName:");
         final TextField repeatuserNameTextField = new TextField();
+        
+
+        
         Label passwordLabel = new Label("Password:");
         final PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Your Password");
-        Label repeatpasswordLabel = new Label("Renter Password:");
+        
+        Label repeatpasswordLabel = new Label("Re-enter Password:");
         final PasswordField repeatpasswordField = new PasswordField();
         repeatpasswordField.setPromptText("Your Password");
+        
         Button createNewAccountButton = new Button("Create New Account");
         final Text createAccountMessage = new Text();
         createNewAccountButton.setOnAction((ActionEvent event)->{
-        createAccountMessage.setText("Your Account has been created.");
-        createAccountMessage.setFill(Color.RED);
-    });
+            
+            boolean errors=false;
+            String username=null;
+            String pw=null;
+            FileWriter fw=null;
+            BufferedWriter bw=null;
+
+            /*Assign username if
+            - it is equal to the string in the repeat field
+            - AND it is greater than 6 characters
+            */
+            String entered=userNameTextField.getText();
+            if(entered.equals(repeatuserNameTextField.getText()) 
+                    && entered.length()>=6){
+                username=entered;
+            } else {
+                errors=true;
+            }
+            
+            /*Assign password if
+            - it is equal to the string in the repeat field
+            - AND it is at least 8 characters
+            */          
+            entered=passwordField.getText();
+            if(entered.equals(repeatpasswordField.getText()) 
+                    && entered.length()>=8){
+                pw=entered;
+                
+            } else {
+                errors=true;
+            }
+            
+            //Write info to a new file
+            if(!errors){
+                try {
+                    fw=new FileWriter(username+"_info.txt");
+                    bw=new BufferedWriter(fw);
+                    //String content=username+"\n"+pw;
+                    bw.write(username);
+                    bw.newLine();
+                    bw.write(pw);
+                    bw.newLine();
+                } catch (IOException ex) {
+                    System.out.println("Something went wrong...");
+                } finally {
+                    try {
+                    if (bw != null){
+                        bw.close();
+                    }
+                    if (fw != null){
+                        fw.close();
+                    }
+                    } catch (IOException ex) {
+                        System.out.println("Something went wrong");
+                    }
+                }
+                createAccountMessage.setText("Your Account has been created.");
+                createAccountMessage.setFill(Color.RED);
+            } else {
+                createAccountMessage.setText("Errors with creating your Account");
+                createAccountMessage.setFill(Color.RED);
+            }
+        });
+        
         gridPane.add(text, 0, 0);
         gridPane.add(userNameLabel, 0, 1);
         gridPane.add(userNameTextField, 0, 2);
@@ -220,7 +289,6 @@ public class UserInterface extends Application {
         rootGroup.setPadding(new Insets(12, 12, 12, 12));
         secondaryStage.setScene(new Scene(rootGroup));
         secondaryStage.show();
-
     }
 
     private void login(Stage tertiaryStage) {
@@ -235,10 +303,13 @@ public class UserInterface extends Application {
         gridPane.setPadding(new Insets(20, 20, 20, 20));
         gridPane.setHgap(5);
         gridPane.setVgap(5);
+        
         Text text = new Text();
         InnerShadow is = new InnerShadow();
+        
         is.setOffsetX(2.0f);
         is.setOffsetY(2.0f);
+        
         text.setEffect(is);
         text.setX(20);
         text.setY(100);
@@ -248,17 +319,53 @@ public class UserInterface extends Application {
 
         text.setTranslateX(0);
         text.setTranslateY(0);
+        
         Label userNameLabel = new Label("UserName:");
         final TextField userNameTextField = new TextField();
         Label passwordLabel = new Label("Password:");
         final PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Your Password");
+        
         final Text loginMessage = new Text();
         Button loginToAccountButton = new Button("Login");
-        loginToAccountButton.setOnAction((ActionEvent event)->{
-        loginMessage.setText("You have been logged in into your account.");
-        loginMessage.setFill(Color.RED);
-    });
+        
+        loginToAccountButton.setOnAction((ActionEvent event)->{ 
+            
+            FileReader fr=null;
+            BufferedReader br=null;
+            
+            try {
+                fr =new FileReader(userNameTextField.getText()+"_info.txt");
+                br=new BufferedReader(fr);
+                
+                String user=br.readLine();
+                String pw=br.readLine();
+                
+                if(!pw.equals(passwordField.getText())){
+                    loginMessage.setText("Incorrect password");
+                    loginMessage.setFill(Color.RED);
+                } else {
+                    loginMessage.setText("Login successful");
+                    loginMessage.setFill(Color.RED);
+                    _user=user;
+                }
+                
+            } catch (IOException ex) {
+                loginMessage.setText("No such username");
+                loginMessage.setFill(Color.RED);
+            } finally {
+                try {
+                    if(fr!=null){
+                        fr.close();
+                    }
+                    if(br!=null){
+                        br.close();
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
         gridPane.add(text, 0, 0);
         gridPane.add(userNameLabel, 0, 1);
         gridPane.add(userNameTextField, 0, 2);
