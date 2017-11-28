@@ -104,7 +104,7 @@ public class UserInterface extends Application {
         for (File file : _images) {
             System.out.println(file.getName());
 
-            MultipartEntity entity = new MultipartEntity();
+            MultipartEntity entity = new MultipartEntity(); //Yes, this method is deprecated. Please don't mess with it.
             entity.addPart("file", new FileBody(file));
 
             post.setEntity(entity);
@@ -115,13 +115,32 @@ public class UserInterface extends Application {
                 Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            if (response != null) {
+            if (response!=null) {
                 HttpEntity responseEnt = response.getEntity();
                 try {
+                    //Get values from SeeFood output
+                    String str=EntityUtils.toString(responseEnt);
+                    //Get rid of the brackets at either end of the returned string
+                    str=str.replaceAll("\\[\\[", "");
+                    str=str.replaceAll("\\]\\]", "");
+                    String[] arr=str.split("  ");
+                    //For some reason, non-negative left values (values for images that do contain food)
+                    //have a space in front of them. Get rid of this.
+                    arr[0]=arr[0].trim();
+                    for(int i=0;i<arr.length ;i++){
+                        System.out.println(i+": "+arr[i]);
+                    }
+                    //Parse these strings to doubles
+                    double left=Double.parseDouble(arr[0]);
+                    double right=Double.parseDouble(arr[1]);
                     
-                    System.out.println(EntityUtils.toString(responseEnt));
+                    //Record the results to a user file
+                    Archived archive=new Archived(file.getName(), left, right, new Date());
+                    writeToFile(archive);
+
                 } catch (IOException | ParseException ex) {
-                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+                    //IOException is thrown when running multiple images, but
+                    //functionality of program doesn't seem to be affected.
                 }
             }
         }
@@ -148,17 +167,19 @@ public class UserInterface extends Application {
     /**
      * Writes information to a file. Currently just writes hard-coded output.
      */
-    private void writeToFile() {
-        String writeToFileName = "life.txt";
-
+    private void writeToFile(Archived arc) {
+        String writeToFileName = "archive\\"+_user+"_archive.txt";
+        FileWriter fw=null;
+        BufferedWriter bw=null;
         try {
-            FileWriter fileWriter = new FileWriter(writeToFileName);
-            try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
-                bufferedWriter.write("Hello, I am Jonathan Poston.\n");
-                bufferedWriter.write("I am the creator of the User Interface for this project.");
-            }
-        } catch (IOException ioException) {
+            fw=new FileWriter(writeToFileName, true);
+            bw=new BufferedWriter(fw);
+            bw.newLine();
+            bw.write(arc.toString());
+        } catch (IOException e) {
             System.out.println("The file" + writeToFileName + "cannot be written to");
+        } finally {
+            closer(fw, bw);
         }
     }
 
@@ -214,6 +235,8 @@ public class UserInterface extends Application {
             String pw=null;
             FileWriter fw=null;
             BufferedWriter bw=null;
+            FileWriter fw2=null;
+            BufferedWriter bw2=null;
 
             /*Assign username if
             - it is equal to the string in the repeat field
@@ -243,26 +266,23 @@ public class UserInterface extends Application {
             //Write info to a new file
             if(!errors){
                 try {
-                    fw=new FileWriter(username+"_info.txt");
+                    fw=new FileWriter("users\\"+username+"_info.txt");
                     bw=new BufferedWriter(fw);
                     //String content=username+"\n"+pw;
                     bw.write(username);
                     bw.newLine();
                     bw.write(pw);
                     bw.newLine();
+                    
+                    //Create an empty archive file for the user
+                    fw2=new FileWriter("archive\\"+username+"_archive.txt");
+                    bw2=new BufferedWriter(fw2);
+                    bw2.write("Filename"+"\t\t\t"+"Food?"+"\t\t"+"Confidence"+"\t\t"+"Date Tested");
                 } catch (IOException ex) {
                     System.out.println("Something went wrong...");
                 } finally {
-                    try {
-                    if (bw != null){
-                        bw.close();
-                    }
-                    if (fw != null){
-                        fw.close();
-                    }
-                    } catch (IOException ex) {
-                        System.out.println("Something went wrong");
-                    }
+                    closer(fw, bw);
+                    closer(fw2, bw2);
                 }
                 createAccountMessage.setText("Your Account has been created.");
                 createAccountMessage.setFill(Color.RED);
@@ -335,7 +355,7 @@ public class UserInterface extends Application {
             BufferedReader br=null;
             
             try {
-                fr =new FileReader(userNameTextField.getText()+"_info.txt");
+                fr =new FileReader("users\\"+userNameTextField.getText()+"_info.txt");
                 br=new BufferedReader(fr);
                 
                 String user=br.readLine();
@@ -354,16 +374,7 @@ public class UserInterface extends Application {
                 loginMessage.setText("No such username");
                 loginMessage.setFill(Color.RED);
             } finally {
-                try {
-                    if(fr!=null){
-                        fr.close();
-                    }
-                    if(br!=null){
-                        br.close();
-                    }
-                } catch (IOException ex) {
-                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
-                }
+               closer(fr, br);
             }
         });
         gridPane.add(text, 0, 0);
@@ -379,7 +390,42 @@ public class UserInterface extends Application {
         rootGroup.setPadding(new Insets(12, 12, 12, 12));
         tertiaryStage.setScene(new Scene(rootGroup));
         tertiaryStage.show();
-
+    }
+    
+    /**
+     * Wrapper function to use less lines closing FileWriter and BufferedWriter objects
+     * @param fw - a FileWriter object
+     * @param bw - a BufferedWriter object
+     */
+    private void closer(FileWriter fw, BufferedWriter bw){
+        try {
+            if (bw!=null){
+                bw.close();
+            }
+            if (fw!=null){
+                fw.close();
+            }
+        } catch (IOException ex) {
+            System.out.println("Something went wrong");
+        }
+    }
+    
+    /**
+     * Wrapper method for closing FileReader and BufferedReader objects
+     * @param fr - a FileReader object
+     * @param br - a BufferedReader object
+     */
+    private void closer(FileReader fr, BufferedReader br){
+         try {
+            if(fr!=null){
+                fr.close();
+            }
+            if(br!=null){
+                br.close();
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     /**
      * Class to store the archival information of each image sent to SeeFood
@@ -389,8 +435,8 @@ public class UserInterface extends Application {
     private class Archived {
 
         private String _filename;
-        private boolean _food;
-        private double _con;    //short for "confidence value"
+        private double _leftval;
+        private double _rightval;
         private Date _date;
 
         /**
@@ -401,22 +447,55 @@ public class UserInterface extends Application {
          * @param con - confidence level of SeeFood
          * @param date - date these values were generated
          */
-        public Archived(String filename, boolean food, double con, Date date) {
-            _filename = filename;
-            _food = food;
-            _con = con;
-            _date = date;
+        public Archived(String filename, double left, double right, Date date) {
+            _filename=filename;
+            _leftval=left;
+            _rightval=right;
+            _date=date;
         }
-
+        /**
+         * Determines whether or not the archived image contained food. If return
+         * is positive, it does. If not, it isn't.
+         * @return whether or not image contains food.
+         */
+        private String isFood(){
+            if(_leftval-_rightval>=0){
+                return "Yes";
+            } else {
+                return "No";
+            }
+        }
+        /**
+         * Using the double value that was passed to the constructor, create a
+         * string that reflects how sure SeeFood is of its decision
+         * @return the confidence level as a string
+         */
+        private String confidenceLevel(){
+            String str;
+            double foodness=_leftval-_rightval;
+            if(foodness>2.0 || foodness<-2.0){
+                str="Strong";
+            } else if(foodness>1.0 || foodness<-1.0){
+                str="Medium";
+            } else {
+                str="Weak";
+            }
+            return str;
+        }
+        private String trimFileName(){
+            if(_filename.length()>8){
+                return _filename.substring(0, 7)+"...";
+            }
+            return _filename;
+        }
         @Override
         /**
          * Overrides toString method to output contents of object, each separated by
          * 2 tabs.
-         *
          * @return a formatted string of the object's values
          */
         public String toString() {
-            return _filename + "/t/t" + _food + "/t/t" + _con + "/t/t" + _date.toString();
+            return trimFileName()+"\t\t\t"+isFood()+ "\t\t" +confidenceLevel()+"\t\t"+_date.toString();
         }
     }
 }
