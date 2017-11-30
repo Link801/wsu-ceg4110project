@@ -1,0 +1,3 @@
+Filename			Food?		Confidence		Date Tested
+1349795...			No		Strong		Tue Nov 28 16:33:14 EST 2017
+1463321...			No		Medium		Tue Nov 28 16:33:15 EST 2017

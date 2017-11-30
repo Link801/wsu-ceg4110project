@@ -6,13 +6,11 @@ import java.util.*;
 import java.util.logging.*;
 import javafx.application.*;
 import static javafx.application.Application.launch;
-import javafx.collections.ObservableList;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.effect.InnerShadow;
-import javafx.scene.effect.Reflection;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -33,14 +31,13 @@ import org.apache.http.util.EntityUtils;
 public class UserInterface extends Application {
 
     private List<File> _images;
+    private String _user="default";
 
     /**
      * @param args the command line arguments
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException {
-        WriteToFile();
-        ReadFromFile();
         System.setProperty("java.net.preferIPv4Stack", "true");
         launch(args);
     }
@@ -74,10 +71,10 @@ public class UserInterface extends Application {
             exportImages();
         });
         newUserButton.setOnAction((ActionEvent event) -> {
-            CreateUser(secondaryStage);
+            createUser(secondaryStage);
         });
         loginButton.setOnAction((ActionEvent event) -> {
-            Login(tertiaryStage);
+            login(tertiaryStage);
         });
 
         final GridPane inputGridPane = new GridPane();
@@ -107,7 +104,7 @@ public class UserInterface extends Application {
         for (File file : _images) {
             System.out.println(file.getName());
 
-            MultipartEntity entity = new MultipartEntity();
+            MultipartEntity entity = new MultipartEntity(); //Yes, this method is deprecated. Please don't mess with it.
             entity.addPart("file", new FileBody(file));
 
             post.setEntity(entity);
@@ -118,18 +115,41 @@ public class UserInterface extends Application {
                 Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            if (response != null) {
+            if (response!=null) {
                 HttpEntity responseEnt = response.getEntity();
                 try {
-                    System.out.println(EntityUtils.toString(responseEnt));
+                    //Get values from SeeFood output
+                    String str=EntityUtils.toString(responseEnt);
+                    //Get rid of the brackets at either end of the returned string
+                    str=str.replaceAll("\\[\\[", "");
+                    str=str.replaceAll("\\]\\]", "");
+                    String[] arr=str.split("  ");
+                    //For some reason, non-negative left values (values for images that do contain food)
+                    //have a space in front of them. Get rid of this.
+                    arr[0]=arr[0].trim();
+                    for(int i=0;i<arr.length ;i++){
+                        System.out.println(i+": "+arr[i]);
+                    }
+                    //Parse these strings to doubles
+                    double left=Double.parseDouble(arr[0]);
+                    double right=Double.parseDouble(arr[1]);
+                    
+                    //Record the results to a user file
+                    Archived archive=new Archived(file.getName(), left, right, new Date());
+                    writeToFile(archive);
+
                 } catch (IOException | ParseException ex) {
-                    Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+                    //IOException is thrown when running multiple images, but
+                    //functionality of program doesn't seem to be affected.
                 }
             }
         }
     }
-
-    public static void ReadFromFile() throws IOException {
+    /**
+     * Read archive information from file. Currently just reads sample input.
+     * @throws IOException 
+     */
+    private static void readFromFile() throws IOException {
         String readFromFileName = "life.txt";
         String lineFromFile = null;
         try {
@@ -143,61 +163,135 @@ public class UserInterface extends Application {
         }
 
     }
-
-    public static void WriteToFile() {
-        String writeToFileName = "life.txt";
-
+    
+    /**
+     * Writes information to a file. Currently just writes hard-coded output.
+     */
+    private void writeToFile(Archived arc) {
+        String writeToFileName = "archive\\"+_user+"_archive.txt";
+        FileWriter fw=null;
+        BufferedWriter bw=null;
         try {
-            FileWriter fileWriter = new FileWriter(writeToFileName);
-            try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
-                bufferedWriter.write("Hello, I am Jonathan Poston.\n");
-                bufferedWriter.write("I am the creator of the User Interface for this project.");
-            }
-        } catch (IOException ioException) {
+            fw=new FileWriter(writeToFileName, true);
+            bw=new BufferedWriter(fw);
+            bw.newLine();
+            bw.write(arc.toString());
+        } catch (IOException e) {
             System.out.println("The file" + writeToFileName + "cannot be written to");
+        } finally {
+            closer(fw, bw);
         }
     }
 
-    public void CreateUser(Stage secondaryStage) {
+    private void createUser(Stage secondaryStage) {
         secondaryStage.setTitle("Create New Accounnt");
         BorderPane borderPane = new BorderPane();
         borderPane.setPadding(new Insets(10, 50, 50, 50));
 
         HBox hBox = new HBox();
         hBox.setPadding(new Insets(20, 20, 20, 30));
+        
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(20, 20, 20, 20));
         gridPane.setHgap(5);
         gridPane.setVgap(5);
+        
         Text text = new Text();
         InnerShadow is = new InnerShadow();
+        
         is.setOffsetX(2.0f);
         is.setOffsetY(2.0f);
+        
         text.setEffect(is);
         text.setX(20);
         text.setY(100);
         text.setText("Create A New User Account");
         text.setFill(Color.RED);
         text.setFont(Font.font("null", FontWeight.BOLD, 30));
-
         text.setTranslateX(0);
         text.setTranslateY(0);
+        
         Label userNameLabel = new Label("UserName:");
         final TextField userNameTextField = new TextField();
-        Label repeatuserNameLabel = new Label("Renter UserName:");
+        Label repeatuserNameLabel = new Label("Re-enter UserName:");
         final TextField repeatuserNameTextField = new TextField();
+        
+
+        
         Label passwordLabel = new Label("Password:");
         final PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Your Password");
-        Label repeatpasswordLabel = new Label("Renter Password:");
+        
+        Label repeatpasswordLabel = new Label("Re-enter Password:");
         final PasswordField repeatpasswordField = new PasswordField();
         repeatpasswordField.setPromptText("Your Password");
+        
         Button createNewAccountButton = new Button("Create New Account");
         final Text createAccountMessage = new Text();
         createNewAccountButton.setOnAction((ActionEvent event)->{
-        createAccountMessage.setText("Your Account has been created.");
-        createAccountMessage.setFill(Color.RED);
-    });
+            
+            boolean errors=false;
+            String username=null;
+            String pw=null;
+            FileWriter fw=null;
+            BufferedWriter bw=null;
+            FileWriter fw2=null;
+            BufferedWriter bw2=null;
+
+            /*Assign username if
+            - it is equal to the string in the repeat field
+            - AND it is greater than 6 characters
+            */
+            String entered=userNameTextField.getText();
+            if(entered.equals(repeatuserNameTextField.getText()) 
+                    && entered.length()>=6){
+                username=entered;
+            } else {
+                errors=true;
+            }
+            
+            /*Assign password if
+            - it is equal to the string in the repeat field
+            - AND it is at least 8 characters
+            */          
+            entered=passwordField.getText();
+            if(entered.equals(repeatpasswordField.getText()) 
+                    && entered.length()>=8){
+                pw=entered;
+                
+            } else {
+                errors=true;
+            }
+            
+            //Write info to a new file
+            if(!errors){
+                try {
+                    fw=new FileWriter("users\\"+username+"_info.txt");
+                    bw=new BufferedWriter(fw);
+                    //String content=username+"\n"+pw;
+                    bw.write(username);
+                    bw.newLine();
+                    bw.write(pw);
+                    bw.newLine();
+                    
+                    //Create an empty archive file for the user
+                    fw2=new FileWriter("archive\\"+username+"_archive.txt");
+                    bw2=new BufferedWriter(fw2);
+                    bw2.write("Filename"+"\t\t\t"+"Food?"+"\t\t"+"Confidence"+"\t\t"+"Date Tested");
+                } catch (IOException ex) {
+                    System.out.println("Something went wrong...");
+                } finally {
+                    closer(fw, bw);
+                    closer(fw2, bw2);
+                }
+                createAccountMessage.setText("Your Account has been created.");
+                createAccountMessage.setFill(Color.RED);
+            } else {
+                createAccountMessage.setText("Errors with creating your Account");
+                createAccountMessage.setFill(Color.RED);
+            }
+        });
+        
         gridPane.add(text, 0, 0);
         gridPane.add(userNameLabel, 0, 1);
         gridPane.add(userNameTextField, 0, 2);
@@ -215,10 +309,9 @@ public class UserInterface extends Application {
         rootGroup.setPadding(new Insets(12, 12, 12, 12));
         secondaryStage.setScene(new Scene(rootGroup));
         secondaryStage.show();
-
     }
 
-    public void Login(Stage tertiaryStage) {
+    private void login(Stage tertiaryStage) {
         tertiaryStage.setTitle("Login");
         BorderPane borderPane = new BorderPane();
         borderPane.setPadding(new Insets(10, 50, 50, 50));
@@ -230,10 +323,13 @@ public class UserInterface extends Application {
         gridPane.setPadding(new Insets(20, 20, 20, 20));
         gridPane.setHgap(5);
         gridPane.setVgap(5);
+        
         Text text = new Text();
         InnerShadow is = new InnerShadow();
+        
         is.setOffsetX(2.0f);
         is.setOffsetY(2.0f);
+        
         text.setEffect(is);
         text.setX(20);
         text.setY(100);
@@ -243,17 +339,44 @@ public class UserInterface extends Application {
 
         text.setTranslateX(0);
         text.setTranslateY(0);
+        
         Label userNameLabel = new Label("UserName:");
         final TextField userNameTextField = new TextField();
         Label passwordLabel = new Label("Password:");
         final PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Your Password");
+        
         final Text loginMessage = new Text();
         Button loginToAccountButton = new Button("Login");
-        loginToAccountButton.setOnAction((ActionEvent event)->{
-        loginMessage.setText("You have been logged in into your account.");
-        loginMessage.setFill(Color.RED);
-    });
+        
+        loginToAccountButton.setOnAction((ActionEvent event)->{ 
+            
+            FileReader fr=null;
+            BufferedReader br=null;
+            
+            try {
+                fr =new FileReader("users\\"+userNameTextField.getText()+"_info.txt");
+                br=new BufferedReader(fr);
+                
+                String user=br.readLine();
+                String pw=br.readLine();
+                
+                if(!pw.equals(passwordField.getText())){
+                    loginMessage.setText("Incorrect password");
+                    loginMessage.setFill(Color.RED);
+                } else {
+                    loginMessage.setText("Login successful");
+                    loginMessage.setFill(Color.RED);
+                    _user=user;
+                }
+                
+            } catch (IOException ex) {
+                loginMessage.setText("No such username");
+                loginMessage.setFill(Color.RED);
+            } finally {
+               closer(fr, br);
+            }
+        });
         gridPane.add(text, 0, 0);
         gridPane.add(userNameLabel, 0, 1);
         gridPane.add(userNameTextField, 0, 2);
@@ -267,46 +390,114 @@ public class UserInterface extends Application {
         rootGroup.setPadding(new Insets(12, 12, 12, 12));
         tertiaryStage.setScene(new Scene(rootGroup));
         tertiaryStage.show();
-
     }
+    
+    /**
+     * Wrapper function to use less lines closing FileWriter and BufferedWriter objects
+     * @param fw - a FileWriter object
+     * @param bw - a BufferedWriter object
+     */
+    private void closer(FileWriter fw, BufferedWriter bw){
+        try {
+            if (bw!=null){
+                bw.close();
+            }
+            if (fw!=null){
+                fw.close();
+            }
+        } catch (IOException ex) {
+            System.out.println("Something went wrong");
+        }
+    }
+    
+    /**
+     * Wrapper method for closing FileReader and BufferedReader objects
+     * @param fr - a FileReader object
+     * @param br - a BufferedReader object
+     */
+    private void closer(FileReader fr, BufferedReader br){
+         try {
+            if(fr!=null){
+                fr.close();
+            }
+            if(br!=null){
+                br.close();
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(UserInterface.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    /**
+     * Class to store the archival information of each image sent to SeeFood
+     *
+     * @author Sam
+     */
+    private class Archived {
 
+        private String _filename;
+        private double _leftval;
+        private double _rightval;
+        private Date _date;
+
+        /**
+         * Constructor
+         *
+         * @param filename - name of image file
+         * @param food - is or is not food
+         * @param con - confidence level of SeeFood
+         * @param date - date these values were generated
+         */
+        public Archived(String filename, double left, double right, Date date) {
+            _filename=filename;
+            _leftval=left;
+            _rightval=right;
+            _date=date;
+        }
+        /**
+         * Determines whether or not the archived image contained food. If return
+         * is positive, it does. If not, it isn't.
+         * @return whether or not image contains food.
+         */
+        private String isFood(){
+            if(_leftval-_rightval>=0){
+                return "Yes";
+            } else {
+                return "No";
+            }
+        }
+        /**
+         * Using the double value that was passed to the constructor, create a
+         * string that reflects how sure SeeFood is of its decision
+         * @return the confidence level as a string
+         */
+        private String confidenceLevel(){
+            String str;
+            double foodness=_leftval-_rightval;
+            if(foodness>2.0 || foodness<-2.0){
+                str="Strong";
+            } else if(foodness>1.0 || foodness<-1.0){
+                str="Medium";
+            } else {
+                str="Weak";
+            }
+            return str;
+        }
+        private String trimFileName(){
+            if(_filename.length()>8){
+                return _filename.substring(0, 7)+"...";
+            }
+            return _filename;
+        }
+        @Override
+        /**
+         * Overrides toString method to output contents of object, each separated by
+         * 2 tabs.
+         * @return a formatted string of the object's values
+         */
+        public String toString() {
+            return trimFileName()+"\t\t\t"+isFood()+ "\t\t" +confidenceLevel()+"\t\t"+_date.toString();
+        }
+    }
 }
 
-/**
- * Class to store the archival information of each image sent to SeeFood
- *
- * @author Sam
- */
-class Archived {
 
-    private String _filename;
-    private boolean _food;
-    private double _con;    //short for "confidence value"
-    private Date _date;
-
-    /**
-     * Constructor
-     *
-     * @param filename - name of image file
-     * @param food - is or is not food
-     * @param con - confidence level of SeeFood
-     * @param date - date these values were generated
-     */
-    public Archived(String filename, boolean food, double con, Date date) {
-        _filename = filename;
-        _food = food;
-        _con = con;
-        _date = date;
-    }
-
-    @Override
-    /**
-     * Overrides toString method to output contents of object, each separated by
-     * 2 tabs.
-     *
-     * @return a formatted string of the object's values
-     */
-    public String toString() {
-        return _filename + "/t/t" + _food + "/t/t" + _con + "/t/t" + _date.toString();
-    }
-}
