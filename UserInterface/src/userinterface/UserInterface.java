@@ -26,7 +26,7 @@ import org.apache.http.util.EntityUtils;
 
 /**
  *
- * @author Jon
+ * @author Jon, Sam
  */
 public class UserInterface extends Application {
 
@@ -43,6 +43,9 @@ public class UserInterface extends Application {
     }
 
     @Override
+    /**
+     * The main driver of the application.
+     */
     public void start(Stage primaryStage) {
         final FileChooser fc = new FileChooser();
         Stage secondaryStage = new Stage();
@@ -95,7 +98,8 @@ public class UserInterface extends Application {
     }
 
     /**
-     * Sends one or more images to SeeFood via HTTP POST.
+     * Sends one or more images to SeeFood via HTTP POST. It then writes
+     * results to a user file.
      */
     private void exportImages() {
         HttpClient client = HttpClients.createDefault();
@@ -166,6 +170,7 @@ public class UserInterface extends Application {
     
     /**
      * Writes information to a file. Currently just writes hard-coded output.
+     * @param arc - An object of the custom Archived class (see below)
      */
     private void writeToFile(Archived arc) {
         String writeToFileName = "archive\\"+_user+"_archive.txt";
@@ -182,7 +187,12 @@ public class UserInterface extends Application {
             closer(fw, bw);
         }
     }
-
+    
+    /**
+     * Creates a personal file for a new user. All images that user exports
+     * to SeeFood are logged in their own personal file.
+     * @param secondaryStage - A new window for the interface.
+     */
     private void createUser(Stage secondaryStage) {
         secondaryStage.setTitle("Create New Accounnt");
         BorderPane borderPane = new BorderPane();
@@ -310,7 +320,11 @@ public class UserInterface extends Application {
         secondaryStage.setScene(new Scene(rootGroup));
         secondaryStage.show();
     }
-
+    
+    /**
+     * Let's user log into an existing account.
+     * @param tertiaryStage - A new window for the interface
+     */
     private void login(Stage tertiaryStage) {
         tertiaryStage.setTitle("Login");
         BorderPane borderPane = new BorderPane();
@@ -482,6 +496,12 @@ public class UserInterface extends Application {
             }
             return str;
         }
+        
+        /**
+         * Shortens longer image filenames so they don't ruin
+         * the txt file's formatting
+         * @return a potentially shorted filename
+         */
         private String trimFileName(){
             if(_filename.length()>8){
                 return _filename.substring(0, 7)+"...";
