@@ -50,11 +50,9 @@ def upload_file():
 def get_file(file_name):
    file = "/var/www/seefood/foodimages/" + file_name
    if(os.path.isfile(file)):
-       return "file exist"
        return send_file(file)
    else:
        file = "/var/www/seefood/notfoodimages/" + file_name
-       return "dont exist"
        return send_file(file)
 
 @app.route('/log')
